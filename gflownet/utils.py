@@ -25,8 +25,9 @@ def trajectory_balance_loss(total_flow, rewards, fwd_probs):
     # sample with such fwd_prob
     lhs = total_flow * torch.prod(fwd_probs, dim=1)
     # rhs = rewards * torch.prod(back_probs, dim=1)
-    loss = torch.log(lhs / rewards)**2
-    assert torch.isfinite(loss).all(), total_flow
+    loss = torch.log(lhs / (rewards + 1e-8))**2
+    if not torch.isfinite(loss).all():
+        raise AssertionError("NaN values")
     # if not torch.isfinite(loss).all():
     #     s = (torch.prod(fwd_probs, dim=1) == 0).sum()
     #     print(s)
