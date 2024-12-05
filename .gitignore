@@ -3,3 +3,7 @@ __pycache__/
 .idea/
 benchmark/*
 .ipynb_checkpoints/*
+
+# Cambios
+*.pt
+results/
