@@ -7,3 +7,10 @@ benchmark/*
 # Cambios
 *.pt
 results/
+bin
+include
+lib/
+lib64
+pyvenv.cfg
+.python-version
+share/
