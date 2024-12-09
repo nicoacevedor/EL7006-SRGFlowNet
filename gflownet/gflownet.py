@@ -55,7 +55,7 @@ class GFlowNet(nn.Module):
         probs = self.forward_policy(s)
         return self.mask_and_normalize(s, probs)
     
-    def sample_states(self, s0):
+    def sample_states(self, s0, get_max: bool = False):
         """
         Samples and returns a collection of final states from the GFlowNet.
         
@@ -69,7 +69,10 @@ class GFlowNet(nn.Module):
         while not done.all():
             probs, done = self.forward_probs(s)
             probs = probs[~done]
-            actions = Categorical(probs).sample()
+            if get_max:
+                actions = probs.max(dim=1)[1]
+            else:
+                actions = Categorical(probs).sample()
             state, update_success = self.env.update(s[~done], actions)
             all_success = update_success.all()
 
@@ -86,7 +89,7 @@ class GFlowNet(nn.Module):
             _fwd_probs.append(fwd_probs)
 
         _rewards = self.env.reward(s)
-        log = Log(_traj, _fwd_probs, _rewards, self.total_flow)
+        log = Log(_traj, _fwd_probs, _rewards, self.total_flow, str(self.env.reward_manager.best_expr))
         return s, log
     
     def evaluate_trajectories(self, traj, actions):
