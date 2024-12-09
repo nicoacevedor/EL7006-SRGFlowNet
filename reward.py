@@ -40,7 +40,7 @@ class NRMSEReward(RewardManager):
 
     def calc_rewards(self, loss: torch.Tensor, encodings: torch.Tensor, is_eval: bool = False):
         nrmse = torch.sqrt(loss) / torch.std(self.env.y)
-        rewards = torch.clamp(self.env.loss_thres / (self.env.loss_thres + nrmse), min=0.01)
+        rewards = torch.clamp(self.env.loss_thres / (self.env.loss_thres + nrmse + 1e-8), min=0.01)
         if not is_eval:
             self._update_rewards(rewards, loss, encodings)
         return rewards
@@ -52,7 +52,7 @@ class TSSReward(RewardManager):
         self.max_mse = ((self.env.y - self.env.y.mean()) ** 2).mean()
 
     def calc_rewards(self, loss: torch.Tensor, encodings: torch.Tensor, is_eval: bool = False):
-        rewards = torch.clamp(1.0 - loss / self.max_mse, min=0.01)
+        rewards = torch.clamp(1.0 - loss / (self.max_mse + 1e-8), min=0.01)
         if not is_eval:
             self._update_rewards(rewards, loss, encodings)
         return rewards
@@ -66,7 +66,7 @@ class DynamicTSSReward(RewardManager):
         self.q = 0.9
 
     def calc_rewards(self, loss: torch.Tensor, encodings: torch.Tensor, is_eval: bool = False):
-        rewards = torch.clamp(1.0 - loss / self.baseline_mse, min=1e-4)
+        rewards = torch.clamp(1.0 - loss / (self.baseline_mse + 1e-8), min=1e-4)
         if not is_eval:
             self._update_rewards(rewards, loss, encodings)
 
