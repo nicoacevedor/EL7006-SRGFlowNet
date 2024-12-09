@@ -6,7 +6,7 @@ benchmark/*
 
 # Cambios
 *.pt
-results/
+results*/
 bin
 include
 lib/
