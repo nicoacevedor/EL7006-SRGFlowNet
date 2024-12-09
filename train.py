@@ -1,5 +1,6 @@
 import torch
 import argparse
+import json
 import matplotlib.pyplot as plt
 from gflownet.env.sr_env import SRTree
 from actions import Action
@@ -8,7 +9,7 @@ from gflownet import GFlowNet, trajectory_balance_loss
 from tqdm import tqdm
 
 
-def train_plot(errs, flows, avg_mses, top_mses):
+def train_plot(errs, flows, avg_mses, top_mses, save_path=None):
     fix, axis = plt.subplots(2, 2, figsize=(10, 10))
     ax1, ax2 = axis[0, 0], axis[0, 1]
     ax3, ax4 = axis[1, 0], axis[1, 1]
@@ -34,16 +35,16 @@ def train_plot(errs, flows, avg_mses, top_mses):
     ax4.set_ylabel("mse")
     ax4.legend()
 
+    if save_path is not None:
+        plt.savefig(save_path, bbox_inches="tight")
+
     plt.show()
 
 
-def train_gfn_sr(batch_size, num_epochs, show_plot=False, use_gpu=True):
-    torch.manual_seed(4321)
+def train_gfn_sr(X, y, batch_size, num_epochs, seed=4321, show_plot=False, use_gpu=True, save_path=None):
+    torch.manual_seed(seed)
     device = torch.device("cuda") if use_gpu and torch.cuda.is_available() else torch.device("cpu")
     print("training started with device", device)
-    X = torch.empty(200, 2).uniform_(0, 1) * 5
-    # y = X[:, 0] + 3
-    y = X[:, 0] ** 2 - 0.5 * X[:, 1]
     action = Action(X.shape[1])
     env = SRTree(X, y, action_space=action, max_depth=3, loss="dynamic")
 
@@ -77,18 +78,29 @@ def train_gfn_sr(batch_size, num_epochs, show_plot=False, use_gpu=True):
 
     # codes for plotting loss & rewards
     if show_plot:
-        train_plot(errs, flows, avg_mses, top_mses)
+        train_plot(errs, flows, avg_mses, top_mses, save_path)
 
     return model, env, errs, avg_mses, top_mses
 
 
-def evaluate_model(env, model, eval_bs: int = 20, top_quantile: float = 0.1):
+def evaluate_model(env: SRTree, model: GFlowNet, eval_bs: int = 20, top_quantile: float = 0.1, save_path=None):
     eval_s0 = env.get_initial_states(eval_bs)
-    eval_s, _ = model.sample_states(eval_s0)
+    eval_s, log = model.sample_states(eval_s0, get_max=True)
     eval_mse = env.calc_loss(eval_s)
     eval_mse = eval_mse[torch.isfinite(eval_mse)]
     avg_mse = torch.median(eval_mse)
-    top_mse = torch.quantile(eval_mse, q=top_quantile)
+    if eval_mse.numel() == 0:
+        top_mse = avg_mse
+    else:
+        top_mse = torch.quantile(eval_mse, q=top_quantile)
+    if save_path is not None:
+        with open(save_path, 'w') as file:
+            json.dump({
+                "avg_mse": avg_mse.item(), 
+                "top_mse": top_mse.item(),
+                "rmse": avg_mse.sqrt().item(),
+                "expression": log.best_expr
+            }, file)
     return avg_mse, top_mse
 
 
