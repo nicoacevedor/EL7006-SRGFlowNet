@@ -2,7 +2,7 @@ import torch
 
 
 class Log:
-    def __init__(self, traj, fwd_probs, rewards, total_flow):
+    def __init__(self, traj, fwd_probs, rewards, total_flow, best_expr = None):
         """
         Initializes a Stats object to record sampling statistics from a
         GFlowNet (trajectories, forward probabilities, and rewards)
@@ -19,6 +19,7 @@ class Log:
         self.rewards = rewards
         self.total_flow = total_flow
         self._actions = []
+        self._best_expr = best_expr
     
     @property
     def traj(self):
@@ -56,3 +57,9 @@ class Log:
         # self._back_probs = back_probs.reshape(self.num_samples, -1)
         #
         # return self._back_probs
+    
+    @property
+    def best_expr(self):
+        if self._best_expr is None:
+            return ""
+        return self._best_expr
