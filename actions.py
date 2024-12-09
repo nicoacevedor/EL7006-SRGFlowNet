@@ -133,7 +133,7 @@ class ExpressionTree(nn.Module):
         return self.root.eval(X, self.constants)
 
     def __str__(self):
-        print(self.root.expr(self.constants, infix=False))
+        # print(self.root.expr(self.constants, infix=False))
         return str(simplify(self.root.expr(self.constants, infix=False)))
 
 
